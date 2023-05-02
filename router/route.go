@@ -2,12 +2,18 @@ package router
 
 import (
 	"github.com/dishenmakwana/go-fiber/handler"
+	"github.com/dishenmakwana/go-fiber/middleware"
 	"github.com/gofiber/fiber/v2"
 )
 
 func SetupRoutes(app *fiber.App) {
 	api := app.Group("/api")
-	v1 := api.Group("/user")
+
+	//Auth
+	auth := api.Group("/auth")
+	auth.Post("/login", middleware.ValidateUserLogin, handler.Login)
+
+	v1 := api.Group("/user", middleware.Protected())
 
 	// routes
 	v1.Get("/", handler.GetAllUsers)
