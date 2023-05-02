@@ -1,6 +1,8 @@
 package main
 
 import (
+	"os"
+
 	"github.com/dishenmakwana/go-fiber/database"
 	"github.com/dishenmakwana/go-fiber/router"
 	"github.com/gofiber/fiber/v2"
@@ -25,5 +27,5 @@ func main() {
 		},
 	)
 
-	app.Listen(":3000")
+	app.Listen(os.ExpandEnv(":${PORT}"))
 }

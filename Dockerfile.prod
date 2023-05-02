@@ -1,0 +1,48 @@
+# Start from golang base image
+FROM golang:1.19-alpine as builder
+
+ENV GO111MODULE=on
+
+# Install git.
+# Git is required for fetching the dependencies.
+RUN apk update && apk add --no-cache git
+
+# Set the current working directory inside the container 
+WORKDIR /usr/src/app
+
+# Copy go mod and sum files 
+COPY go.mod go.sum ./
+
+RUN go mod tidy
+
+### Setting a proxy for downloading modules
+ENV GOPROXY https://proxy.golang.org,direct
+
+# Download all dependencies. Dependencies will be cached if the go.mod and the go.sum files are not changed 
+RUN go mod download 
+
+# Copy the source from the current directory to the working Directory inside the container 
+COPY . .
+
+### CGO has to be disabled cross platform builds
+### Otherwise the application won't be able to start
+ENV CGO_ENABLED=0
+
+# Build the Go app
+RUN GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" -o main .
+
+# Start a new stage from scratch
+FROM golang:1.19-alpine
+RUN apk --no-cache add ca-certificates
+
+WORKDIR /usr/src/app
+
+# Copy the Pre-built binary file from the previous stage
+COPY --from=builder /usr/src/app/main .
+COPY --from=builder /usr/src/app/.env .
+
+# Expose port 8888 to the outside world
+EXPOSE $PORT
+
+#Command to run the executable
+CMD ["./main"]
